@@ -101,6 +101,11 @@ are supported. Actual limits are account-specific. No paid upgrade is required o
 performed. An explicit `RGI_GROQ_MODEL=openai/gpt-oss-20b` selects the smaller alternative;
 no automatic model/account/provider switch occurs. One configured model serves all roles.
 
+Test the key/network independently of PDFs and local models with
+`uv run python scripts/check_groq.py`. This explicitly sends one small live request and
+consumes free quota when successful. It prints sanitized status/usage, never the key.
+Configuring a key alone does not start calls; static demo/fixture mode never uses Groq.
+
 Run `uv run python scripts/prefetch_assets.py` to download pinned Docling/BGE assets.
 Restart services, re-ingest papers using BGE and select Groq. Old fixture indexes cannot
 enter a real-provider run. Parser/embedding identity changes create new immutable document
