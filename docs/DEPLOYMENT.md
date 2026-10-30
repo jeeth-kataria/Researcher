@@ -5,6 +5,42 @@ Official plan/connection documentation was checked 2026-10-30; check the actual 
 again before deployment. A service asking for a card or upgrade is not a dependency:
 use local mode or the static export instead. Never create artificial keepalive traffic.
 
+## Recommended release sequence for Researcher
+
+1. **Public showcase first.** Import `jeeth-kataria/Researcher` into a personal Vercel
+   Hobby project with root directory `frontend`, framework Vite, install `npm ci`, build
+   `npm run build -- --mode demo`, output `dist`. `frontend/vercel.json` already specifies
+   the demo build and security headers. No environment variables, database, API, model
+   credentials, domain purchase or laptop connection are needed for this release.
+   Keep the project on Hobby and check account eligibility/limits; do not add a paid
+   service. This document is a plan; no Vercel deployment has been created.
+2. **Let visitors inspect the process.** Orchestration is the opening panel. Six saved
+   stages represent five personas in multi-agent mode: the lead appears twice. Stage
+   selection shows summaries, recorded timing when available, and links to related
+   final-artifact sources. Visitors can step through the original synthetic event
+   records, review a contradicted candidate, open a PDF and download the report. No
+   background LLM work starts when a visitor loads or explores the showcase. Walkthrough
+   progress is presentation state, not backend run state. The provider/provenance
+   disclosure remains visible. PDF.js is downloaded only when a source is opened.
+3. **Verify the private research workspace.** Start PostgreSQL/pgvector, download pinned
+   model assets, run the seven database integration tests and the opt-in local browser
+   flow, then perform one explicit Gemini run with a verified free-tier account. Check
+   every claim and candidate against papers. A reviewed, publishable real-run replay
+   would be a separate export/loader addition; the current showcase stays synthetic.
+4. **Gate live public investigations.** Optional mode C below needs shared private PDF
+   storage, scoped auth, rate/admission limits, a measured query-embedding path and
+   tested outbound laptop job claiming before visitors can submit work. A laptop that
+   is off cannot process jobs. The UI must expose queued/offline/quota-paused states.
+   Start with owner-only live submissions; public read-only viewing is the safe initial
+   scope for the shared quota. Always-on public research is not promised under ₹0.
+
+After an explicit deployment request, use a preview deployment first and verify the
+public URL: fixture label, stage map, walkthrough, source/PDF loading, Markdown export,
+mobile width and absence of API requests/credentials. Then promote the same reviewed
+static build. Connecting this GitHub repository for automatic deployments would make
+later pushes to the configured production branch publish automatically; choose that
+setting deliberately. Save the prior deployment so a rollback is available.
+
 ## A — local application
 Use README / LOCAL_SETUP. Original PDFs and artifacts are on local disk; PostgreSQL
 holds durable records/vectors/checkpoints. Existing laptop runs CPU ingestion and

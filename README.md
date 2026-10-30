@@ -20,7 +20,11 @@ npm ci
 npm run demo
 ```
 
-Open http://127.0.0.1:5173. Inspect Findings, Literature matrix, Gap review and Activity;
+Open http://127.0.0.1:5173. Start in Orchestration: select a stage to inspect its saved
+output and related artifact evidence, or choose **Walk through fixture** to step through
+synthetic records without executing agents. The light neumorphic interface uses raised
+panels, inset controls, visible focus outlines and explicit textual status labels.
+Inspect Findings, Literature matrix, Gap review and Activity;
 click a source to render its original PDF page; export Markdown. All three PDFs are
 original synthetic fixtures. A deliberate false candidate is rejected and a toy
 experiment is proposed. This is generated fixture output, not a recorded live run.

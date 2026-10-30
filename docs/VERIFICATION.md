@@ -17,7 +17,7 @@ are separate from those dependencies.
 | Project `pytest -q` | **19 passed, 7 skipped**; skips are real PostgreSQL cases requiring RGI_TEST_DATABASE_URL |
 | `ruff check backend scripts migrations` | Passed |
 | TypeScript + Vite normal/demo production builds | Passed; final patched dependency rerun recorded below |
-| Chromium example browser flows | **2 passed**: review/evidence/PDF canvas/Markdown download/reload; matrix/source inspector/mobile width |
+| Chromium example browser flows | **4 passed** after UI revision: evidence/PDF/export/reload; matrix/mobile retrieval; orchestration/source/walkthrough; single-researcher quota-paused state |
 | Full local browser upload/ingest/retrieval/fixture run | Written, opt-in, **not run** without PostgreSQL/API/worker |
 | Official Gemini SDK with mock HTTP transport | Passed structured request/response and 429 no-retry contracts; **not a live provider run** |
 | Original fixture PDF baseline parsing | All three parsed with pinned pypdf 5.6.0; real PDF bytes, invented source content |
@@ -100,9 +100,10 @@ blockers and did not justify abandoning independent implementation.
 Final frontend pins: Vite **6.4.5**, Playwright **1.55.1** (stable compatible Node lines;
 upgraded to resolve current advisories). `npm install` reports **0 vulnerabilities**
 including development dependencies. Final `npm run build -- --mode demo` passed with
-Vite 6.4.5. PDF.js creates a ~598 kB main bundle plus its ~1.38 MB worker; build emits a
-bundle-size advisory, not a failure. Future lazy loading is an optional improvement.
-Final `npm test`: **2 passed** in Chromium after dependency updates. The full local
+Vite 6.4.5. After the UI revision, lazy loading PDF.js produces a **244 kB main bundle**
+(75 kB gzip), **366 kB PDF viewer chunk** and a ~1.38 MB PDF worker. The main build no
+longer emits a >500 kB chunk advisory.
+Final `npm test`: **4 passed** in Chromium after the UI revision. The full local
 ingestion browser case remains opt-in/unrun. Test-owned servers were stopped after QA.
 
 A final reliability review added session advisory locking around graph execution to

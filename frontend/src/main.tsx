@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import {
   ArrowDownToLine,
@@ -26,9 +26,14 @@ import {
   PanelRightOpen,
 } from "lucide-react";
 import { api, request, download, setOwnerToken } from "./api";
-import { PdfPreview } from "./PdfPreview";
+import { Orchestration } from "./Orchestration";
 import type { Run, Passage, Collection, Paper, Citation } from "./types";
 import "./style.css";
+import "./neumorphic.css";
+
+const PdfPreview = lazy(() =>
+  import("./PdfPreview").then((module) => ({ default: module.PdfPreview })),
+);
 
 type Screen = "workspace" | "library" | "setup" | "history" | "retrieval";
 const modes: Record<string, string> = {
@@ -51,7 +56,7 @@ function App() {
   const demoOnly = import.meta.env.MODE === "demo";
   const [example, setExample] = useState(import.meta.env.MODE === "demo");
   const [screen, setScreen] = useState<Screen>("workspace");
-  const [tab, setTab] = useState("Findings");
+  const [tab, setTab] = useState("Orchestration");
   const [run, setRun] = useState<Run | null>(null);
   const [history, setHistory] = useState<Run[]>([]);
   const [collections, setCollections] = useState<Collection[]>([]);
@@ -312,7 +317,14 @@ function App() {
     ["history", "Run history", History],
   ] as const;
   return (
-    <div className="app">
+    <div
+      className={
+        "app" +
+        (screen === "workspace" && tab === "Orchestration" && run
+          ? " orchestration-view"
+          : "")
+      }
+    >
       <a className="skip" href="#main">
         Skip to workspace
       </a>
@@ -708,6 +720,7 @@ function App() {
                     aria-label="Investigation panels"
                   >
                     {[
+                      "Orchestration",
                       "Findings",
                       "Literature matrix",
                       "Gap review",
@@ -727,6 +740,14 @@ function App() {
                       </button>
                     ))}
                   </div>
+                  {tab === "Orchestration" && (
+                    <Orchestration
+                      key={run.id}
+                      run={run}
+                      openEvidence={(id) => void openEvidence(id)}
+                      onReview={() => setTab("Gap review")}
+                    />
+                  )}
                   {tab === "Findings" && (
                     <div className="findings-layout">
                       <section>
@@ -1657,7 +1678,15 @@ function App() {
                   : "Text & page fallback"}
               </Badge>
             </div>
-            <PdfPreview passage={evidence} />
+            <Suspense
+              fallback={
+                <p role="status" className="muted">
+                  Loading PDF viewer…
+                </p>
+              }
+            >
+              <PdfPreview passage={evidence} />
+            </Suspense>
             <h3>Exact stored passage</h3>
             <blockquote className="source-text">{evidence.text}</blockquote>
             <p className="muted small">
