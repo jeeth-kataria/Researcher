@@ -150,6 +150,9 @@ can be selected via `RGI_BROWSER_EXECUTABLE`. [Verification ledger](docs/VERIFIC
 `.env.example` lists all settings. Optional `RGI_OWNER_TOKEN` enables server-verified
 bearer access; the UI keeps it in memory. `RGI_READ_ONLY=true` rejects all mutations.
 The local API binds to loopback. No public laptop endpoint is created.
+Configuration always loads the project-root `.env`. Relative database/storage paths
+are also rooted there, so launching a script from `scripts/` does not lose credentials
+or create a second data directory. Environment variables still override `.env` values.
 
 Run defaults: 10 model calls, 60,000 conservative token-accounting ceiling, 1,800 output
 tokens/call, 12 tools, 2 followups, 1 review round, k=8 and at most 3 passages/paper. These

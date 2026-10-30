@@ -13,7 +13,7 @@ real model weight downloads are separate from dependency installation.
 | Check | Actual result |
 |---|---|
 | `uv sync --cache-dir .data/uv-cache --extra dev --extra worker` | Passed; lock resolves 176 packages, adds Groq/SqliteSaver, removes PostgreSQL driver/vector/migration packages |
-| `pytest -q` | **41 passed, zero skipped**, including actual file-backed SQLite integration |
+| `pytest -q` | **43 passed, zero skipped**, including actual file-backed SQLite integration and configuration lookup from a nested working directory |
 | SQLite ingestion/retrieval | Original synthetic PDF bytes parsed by pypdf, immutable versions, real FTS5 BM25/exact cosine/RRF and scoped source context exercised |
 | Dispatch/recovery | Atomic competing claims, expired-lease fencing, persisted fixture graph, cancellation, quota pause/resume and explicit ambiguous-call acknowledgement passed |
 | Durability/checkpoint coordination | On-disk checkpoint resume avoids completed model-stage replay; fresh Python process reads saved rows; process-lock contention and death release passed |
@@ -46,6 +46,14 @@ a visible Provider selector; explicit accessible naming fixed it and the flow pa
 No database/locking path was replaced with an in-memory substitute to obtain a pass.
 
 ## Remaining verification
+
+Subsequent local setup: the user configured the Groq key/acknowledgement in ignored
+`.env`. SDK and curl connectivity attempts failed DNS resolution before an HTTP response;
+no successful live call or token usage is recorded. A nested `scripts/` launch exposed
+working-directory-dependent dotenv lookup. Configuration now resolves project-root
+`.env` and data paths consistently; tests verify nested launches and environment priority.
+Actual settings load confirmed key present and acknowledgement true from `scripts/`,
+without printing the key. The no-key statement below describes the original build check.
 
 **Groq account/live calls:** no real key supplied, no live call or quota consumed. Official
 Groq docs list the default 120B and explicit 20B alternative under free limits and strict
