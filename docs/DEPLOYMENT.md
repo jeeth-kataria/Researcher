@@ -1,107 +1,68 @@
-# Zero-required-cost deployment modes
+# ₹0 deployment plan — static public showcase + local research
 
-Nothing was externally deployed. Local and static modes require no cloud accounts.
-Official plan/connection documentation was checked 2026-10-30; check the actual account
-again before deployment. A service asking for a card or upgrade is not a dependency:
-use local mode or the static export instead. Never create artificial keepalive traffic.
+Nothing has been externally deployed. SQLite/Groq are the current architecture, accepted
+in ADR 004. Required spend remains ₹0. No card, paid service, hosted worker or custom
+domain is required. Check actual account terms/usage before publishing.
 
-## Recommended release sequence for Researcher
+## Public showcase
 
-1. **Public showcase first.** Import `jeeth-kataria/Researcher` into a personal Vercel
-   Hobby project with root directory `frontend`, framework Vite, install `npm ci`, build
-   `npm run build -- --mode demo`, output `dist`. `frontend/vercel.json` already specifies
-   the demo build and security headers. No environment variables, database, API, model
-   credentials, domain purchase or laptop connection are needed for this release.
-   Keep the project on Hobby and check account eligibility/limits; do not add a paid
-   service. This document is a plan; no Vercel deployment has been created.
-2. **Let visitors inspect the process.** Orchestration is the opening panel. Six saved
-   stages represent five personas in multi-agent mode: the lead appears twice. Stage
-   selection shows summaries, recorded timing when available, and links to related
-   final-artifact sources. Visitors can step through the original synthetic event
-   records, review a contradicted candidate, open a PDF and download the report. No
-   background LLM work starts when a visitor loads or explores the showcase. Walkthrough
-   progress is presentation state, not backend run state. The provider/provenance
-   disclosure remains visible. PDF.js is downloaded only when a source is opened.
-3. **Verify the private research workspace.** Start PostgreSQL/pgvector, download pinned
-   model assets, run the seven database integration tests and the opt-in local browser
-   flow, then perform one explicit Gemini run with a verified free-tier account. Check
-   every claim and candidate against papers. A reviewed, publishable real-run replay
-   would be a separate export/loader addition; the current showcase stays synthetic.
-4. **Gate live public investigations.** Optional mode C below needs shared private PDF
-   storage, scoped auth, rate/admission limits, a measured query-embedding path and
-   tested outbound laptop job claiming before visitors can submit work. A laptop that
-   is off cannot process jobs. The UI must expose queued/offline/quota-paused states.
-   Start with owner-only live submissions; public read-only viewing is the safe initial
-   scope for the shared quota. Always-on public research is not promised under ₹0.
+Import `jeeth-kataria/Researcher` into an eligible Vercel Hobby project:
 
-After an explicit deployment request, use a preview deployment first and verify the
-public URL: fixture label, stage map, walkthrough, source/PDF loading, Markdown export,
-mobile width and absence of API requests/credentials. Then promote the same reviewed
-static build. Connecting this GitHub repository for automatic deployments would make
-later pushes to the configured production branch publish automatically; choose that
-setting deliberately. Save the prior deployment so a rollback is available.
+| Setting | Value |
+|---|---|
+| Root | `frontend` |
+| Framework | Vite |
+| Install | `npm ci` |
+| Build | `npm run build -- --mode demo` |
+| Output | `dist` |
+| Environment variables | None |
 
-## A — local application
-Use README / LOCAL_SETUP. Original PDFs and artifacts are on local disk; PostgreSQL
-holds durable records/vectors/checkpoints. Existing laptop runs CPU ingestion and
-research worker. No assumed GPU/RAM capacity or always-on availability. Keep the local
-API bound to loopback. Back up both database and source files before changes.
+`frontend/vercel.json` specifies the demo build and security headers. Hobby is intended
+for personal/non-commercial projects; verify eligibility in the
+[official plan documentation](https://vercel.com/docs/plans/hobby). No automatic upgrade
+is part of this project. The same static build can be served locally without an account.
 
-## B — static read-only portfolio example
-`cd frontend && npm ci && npm run build -- --mode demo`. `dist` can be served by any
-static server, without a backend, key or laptop worker. The checked-in sample consists
-only of original synthetic PDFs, report and JSON. It labels fixture provenance on the
-page and in exports. Buttons cannot create uploads/runs. Returning to local workspace
-only tries a same-origin `/api` path; no HTTPS-to-localhost assumption is made.
+Visitors can explore the six-stage/five-persona orchestration, inspect saved summaries,
+step through synthetic records, examine review objections and original PDF sources, and
+export Markdown. Fixture provenance stays visible. No provider request, mutation API,
+database or owner laptop is needed. PDF.js loads on demand. This is an inspectable software
+showcase, not a live research result. No fake agent timers or secret reasoning are shown.
 
-`frontend/vercel.json` prepares a static demo build. Set the Vercel project root to
-`frontend`, choose **Hobby**, and verify account eligibility/usage before publishing.
-Hobby is intended for personal/non-commercial use; do not infer eligibility for a
-commercial service. Inspect current included usage and behavior at limits in the
-[Vercel Hobby docs](https://vercel.com/docs/plans/hobby). No automatic upgrade is needed
-for this repository. Publishing requires a separate explicit user request.
+After an explicit publication request, create a preview, verify provenance/stage selection,
+walkthrough/PDF/export/mobile behavior and absence of privileged requests, then promote
+the reviewed build. Linking automatic production deployments means later pushes to the
+configured branch publish automatically; choose that behavior deliberately and retain
+rollback versions. No deployment has been created in this task.
 
-Export a private completed run with `uv run python scripts/export_run.py RUN_UUID`.
-This copies report/source text/JSON, not PDF bytes or credentials. Review licenses and
-privacy before putting third-party passages or PDFs in public assets. The bundled demo
-loader is intentionally a synthetic example, not an unreviewed real-run publishing tool.
+## Local live workspace
 
-## C — optional hosted API/database + laptop worker (not enabled)
+Run SQLite, files, API and worker on the same macOS/Linux laptop. Groq is the default
+provider; account key + explicit verified free-plan acknowledgement are required for
+real research. Gemini is secondary, explicitly selected. CPU parsing/embedding and the
+bounded graph remain local; selected context is sent to the chosen provider. An offline
+laptop cannot execute jobs. Quota pauses and unknown outcomes remain visible/recoverable.
 
-Prepared API image: `docker build -f deploy/Dockerfile.api .`. It installs core API
-packages only, no Docling/SentenceTransformers/weights. It has **not been built or memory
-sized here** because the Docker daemon is unavailable. Current local retrieval encodes
-queries using BGE in the API. Therefore a slim hosted API needs an additional measured
-query-embedding design before live search can work without worker extras. Do not claim
-the current API fits a small free instance or that this optional mode is production ready.
+Current official [Groq free limits](https://console.groq.com/docs/rate-limits) and
+[structured-output support](https://console.groq.com/docs/structured-outputs) list
+openai/gpt-oss-120b and 20b. Check the exact account before use; multi-stage context can
+exhaust token-per-minute limits. Acknowledgement cannot prove billing status from a key.
+No automatic upgrade, paid fallback, account rotation or quota evasion is implemented.
 
-Potential services and constraints, from current official docs:
+## Live public submissions are a separate design
 
-- [Render Free](https://render.com/docs/free): free web services sleep after idle time,
-  have ephemeral filesystems and shared monthly usage limits. Store neither PDFs nor
-  durable state there. Free Render Postgres is not the durable DB choice here; check
-  its expiration/backup limits. The heavy worker stays on the laptop. Keep owner writes
-  disabled until server-side authentication, source storage and limits are verified.
-- [Supabase Free](https://supabase.com/pricing): current advertised allowances include
-  500 MB database, 1 GB file storage, and projects pausing after a week of inactivity.
-  These are small bounds for vectors and checkpoints, not a permanent capacity promise.
-  Do not enable paid overage/compute. Manually restore paused projects when needed.
-- [Supabase connections](https://supabase.com/docs/guides/database/connecting-to-postgres):
-  prefer a direct connection if the laptop supports its IP family, otherwise a session
-  pooler on the supported port. Transaction pooling is unsupported: graph execution uses session advisory locks
-  as well as checkpoints. Session affinity is required. Use TLS and test
-  actual migration/checkpoint/lease semantics against the chosen connection. Never use
-  privileged database credentials in the browser.
+The old optional Render API + Supabase Postgres + outbound laptop-worker plan is retired
+for this SQLite revision. SQLite WAL assumes one host/local filesystem; a hosted API
+cannot safely open the owner's laptop database over a network share. Ephemeral free
+hosting filesystems also cannot hold durable job history/source files without a proven
+persistent-storage plan. Hosting a React page alone does not solve these boundaries.
 
-Before enabling C, implement/verify the optional object-storage adapter and private
-storage policies, least-privilege SQL/checkpoint roles, server-verified owner auth,
-explicit CORS origin, measured API memory including query handling, secure laptop
-connection and restore/backup process. Existing local disk adapter cannot magically
-share laptop files with an ephemeral hosted API. These are documented limits, not
-working features. No laptop port forwarding or public laptop endpoint is needed:
-the worker would claim database jobs outbound. Offline laptop means queued hosted jobs
-remain queued and the real heartbeat says offline.
+Before enabling public uploads/runs, design a remote coordination API or intentionally
+restore a server database, scoped auth, bounded admissions, private object storage,
+worker outbound transport, measured query-embedding service and recovery/backup behavior.
+Start with owner-only submissions. No always-on multi-user live research service is
+promised under ₹0. Keep the current public release read-only until these exist.
 
-Hugging Face hosted compute is not offered as a required fallback. Account-plan creation
-eligibility was not verified, so no free Docker/Gradio hosting promise is made. No cloud
-account or external deployment is required to finish local/static implementation.
+A reviewed real-run public replay is possible later, with consent/licensing review,
+redaction and an explicit export loader. The current loader serves original synthetic
+papers only. `scripts/export_run.py` exports report and source JSON, not PDF bytes; it
+is not an automatic publication pipeline.

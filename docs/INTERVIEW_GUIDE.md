@@ -1,49 +1,47 @@
-# Interview guide based on this implementation
+# Interview ownership guide
 
-A defensible description: “I studied and extended a local research workbench generated
-with Codex. Its engineering focus is inspectable evidence and recoverable execution,
-not an automated novelty oracle.” Review actual code before claiming implementation
-ownership. No benchmark/novelty/accuracy metric belongs on a resume until evaluated.
+This project was generated with Codex assistance. Review, run and explain the paths you
+claim ownership of. Current architecture is SQLite/Groq; ADR 004 records the amendment.
 
-1. **What does a run freeze?** Ready document-version IDs, hashes, processing/model
-   identity, question/scope and prompt/schema/budget config. Budget resume changes are
-   explicitly audited; prior source evidence stays immutable.
-2. **What is the database buying you?** Relational constraints, atomic job dispatch,
-   FTS, exact vector search and graph state in one locally operated service. This is
-   simpler for this corpus than separate queues/vector stores, not universally optimal.
-3. **Why not just RAG?** RAG is implemented as a baseline. Extra stages separate
-   extraction, candidate generation, objections and proposals. Whether they improve
-   outcomes is an evaluation question with matched corpus/model and visible usage.
-4. **What prevents hallucinated citations?** IDs must come from retrieved in-manifest
-   passages; normalized quotes must match. This prevents provenance fabrication, not
-   misleading interpretation. Separate support review and human evaluation remain.
-5. **How are job races handled?** SKIP LOCKED atomic claims, ownership/expiry leases,
-   heartbeat renewal, fenced writes. Dispatch remains at least once. Integration tests
-   need real PostgreSQL, not SQLite or a mock pretending to prove locking semantics.
-6. **What happens at a crash?** Completed node checkpoint resumes; cached completed
-   model response prevents some repeats. Pending external call outcome is ambiguous;
-   pause and explicitly acknowledge potential duplicate quota use before resending.
-7. **Is full-text rank BM25?** No. Postgres `ts_rank_cd` is its own FTS ranking, fused
-   with vector rank via RRF. Scores are not calibrated confidence probabilities.
-8. **What is the embedding boundary?** BGE-small, 384 dimensions, fixed model revision
-   and preprocessing; actual tokenizer bounds include heading/special/query-prefix
-   tokens. No silent truncation; fixture hashes cannot enter real Gemini research.
-9. **How are PDFs handled safely?** Bounded bytes/pages, signature check, generated
-   content-addressed storage keys, local OCR-off parser, untrusted source text, no
-   arbitrary execution tools. Source coordinates are preserved when available.
-10. **What is actually free?** Local compute/software and static example. Optional Gemini
-    requires an actually free-tier account with billing disabled; the app does not
-    verify billing from a key. Hosted quotas/sleep/pausing can change. No always-on free
-    worker claim, no paid fallback or key rotation.
-11. **What has been verified?** Consult VERIFICATION.md for current counts and limits.
-    Mock-transport SDK tests are not live provider success; memory checkpoint tests are
-    not PostgreSQL durability; static browser flows are not full ingestion integration.
-12. **What would you change first with evidence?** Run real PostgreSQL restart/race tests,
-    Docling/BGE measurements and human-reviewed evaluations; improve chunking/tool
-    autonomy only in response to observed failures. Do not add distributed infrastructure
-    solely to make the architecture diagram look sophisticated.
+1. **What does it do?** Investigates a bounded uploaded corpus, challenges provisional
+   gaps and proposes falsifiable experiments with source passages. It cannot certify novelty.
+2. **Why SQLite?** One local file removes a database-server dependency for a single-laptop
+   workflow. FTS5, vectors, relational data and checkpoints share a durability boundary.
+3. **What is the concurrency tradeoff?** WAL allows concurrent readers, but writes serialize.
+   Short BEGIN IMMEDIATE transactions make claim/count/update sequences atomic. One worker
+   is the supported configuration; cross-host SQLite sharing is not supported.
+4. **Why a separate worker?** Parsing/embedding/model calls outlive HTTP requests. Durable
+   jobs, heartbeat, lease and cancellation survive closing a tab or restarting the API.
+5. **Why both leases and an OS lock?** Leases/fences protect application writes. Checkpoint
+   writes occur after a node returns; a per-run flock covers graph invocation through those
+   commits and releases automatically on process death.
+6. **Is it exactly-once LLM execution?** No. The response can be lost after a remote call
+   succeeds. A persisted pending/uncertain intent pauses and requires explicit duplicate-
+   quota acknowledgement. Caching cannot erase this ambiguity.
+7. **How is retrieval ranked?** SQLite FTS5 BM25 and exact 384D cosine ranks combine via
+   RRF, then source deduplication/diversity. This is genuinely BM25, unlike the superseded
+   Postgres ts_rank_cd path. Scores are not calibrated scientific confidence.
+8. **Why Groq?** User selected it as the primary API. Official SDK, allowlisted structured-
+   output models and account-specific free quotas. Keys remain server-side. Gemini is
+   secondary; fixtures are explicit and never silently substituted for real research.
+9. **What do agents add?** A bounded sequence of specialist roles with explicit artifacts,
+   counter-search, skeptical review and proposals only after review. One lead appears
+   twice. No claim of parallel autonomous workers or measured multi-agent superiority.
+10. **How do you validate citations?** Exact normalized quotes, retrieved passage IDs,
+    frozen manifest membership, same-paper matrix references and separate support review.
+    These structural checks are necessary but human semantic review is still needed.
+11. **What has actually been tested?** See VERIFICATION.md for current counts: actual file-
+    backed SQLite integration and explicitly synthetic browser/provider controls. Mock SDK
+    transport tests are not live Groq/Gemini calls; fixture vectors are not BGE benchmarks.
+12. **What is deployable now?** Read-only synthetic static explorer, plus private local
+    research. A separate hosted API cannot directly share laptop SQLite; live public jobs
+    need a new remote coordination/storage design and verified auth/limits.
 
-Proposed resume bullet: “Built an evidence-first research workbench using FastAPI,
-PostgreSQL/pgvector, local PDF processing, hybrid retrieval and bounded LangGraph
-workflows, with citation validation, a React evidence inspector and deterministic tests.”
-Use “reviewed/extended” in place of “built” until it accurately describes your work.
+Possible resume wording, after personally verifying the claimed paths:
+
+> Built a local evidence-first research workbench with FastAPI, SQLite FTS5, hybrid
+> retrieval, a separate durable worker and bounded LangGraph orchestration; added
+> source-linked review, recoverable quota controls and an inspectable agent workflow.
+
+Discuss assistance candidly; do not claim validated scientific novelty, production
+hosting, live model accuracy, or unperformed scalability benchmarks.

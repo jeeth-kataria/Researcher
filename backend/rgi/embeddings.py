@@ -102,7 +102,7 @@ def embedding_identity():
     return FixtureEmbedder.identity if settings().embedder == "fixture" else BGEEmbedder.identity
 
 
-def vector_sql(vector):
+def vector_json(vector):
     if len(vector) != 384 or not all(math.isfinite(v) for v in vector):
         raise ValueError("Invalid embedding")
     return "[" + ",".join(str(float(v)) for v in vector) + "]"

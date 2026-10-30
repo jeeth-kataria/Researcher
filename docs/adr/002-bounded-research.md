@@ -1,3 +1,6 @@
+> Historical ADR: PostgreSQL/Gemini-first details are superseded by the user-approved
+> [ADR 004](004-sqlite-and-groq.md). Use README and current architecture/setup docs.
+
 # ADR 002 — typed stages before autonomous tools (accepted)
 Requirement: teachable baseline, recoverable five-role research and skepticism.
 Choice: shared Python functions scheduled by a small explicit LangGraph. Ordinary RAG

@@ -55,3 +55,8 @@ and a synthetic single-researcher quota-paused state. The latter intercepts a fi
 response deliberately; it does not verify a live worker or provider. Screenshots of
 desktop and mobile were inspected. See VERIFICATION.md for pending backend checks and
 DEPLOYMENT.md for the static showcase versus live workspace release sequence.
+
+The SQLite/Groq revision makes Groq the setup default. Submission is disabled until
+health confirms server configuration; fixture remains an explicit selection. Completed
+local fixture runs display a synthetic banner even outside static example mode. The
+isolated local browser suite exercises the actual SQLite/API/worker path with fixtures.

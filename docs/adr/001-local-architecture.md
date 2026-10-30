@@ -1,3 +1,6 @@
+> Historical ADR: PostgreSQL/Gemini-first details are superseded by the user-approved
+> [ADR 004](004-sqlite-and-groq.md). Use README and current architecture/setup docs.
+
 # ADR 001 — local monorepo and durable execution (accepted)
 Requirement: zero required spend, inspectable evidence, resumable laptop execution.
 Choice: FastAPI + sync psycopg transactions; separate Python worker; PostgreSQL 16

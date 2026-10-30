@@ -28,7 +28,7 @@ class RunInput(Strict):
     question: str = Field(min_length=10, max_length=2000)
     scope: str = Field(default="Uploaded corpus only", max_length=3000)
     mode: Literal["rag", "single", "multi"] = "multi"
-    provider: Literal["fixture", "gemini"] = "fixture"
+    provider: Literal["groq", "gemini", "fixture"] = "groq"
     budget: Budget = Field(default_factory=Budget)
 
 

@@ -48,6 +48,8 @@ def test_provider_never_falls_back(isolated_settings):
     import pytest
 
     with pytest.raises(ConfigurationPause):
+        provider("groq")
+    with pytest.raises(ConfigurationPause):
         provider("gemini")
     with pytest.raises(ConfigurationPause):
         provider("some-paid-service")

@@ -10,8 +10,9 @@ import httpx
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--url", default="http://127.0.0.1:8000")
-    parser.add_argument("--provider", choices=["fixture", "gemini"], default="fixture")
+    parser.add_argument("--provider", choices=["fixture", "groq", "gemini"], default="fixture")
     parser.add_argument("--mode", choices=["rag", "single", "multi"], default="multi")
+    parser.add_argument("--output", type=Path, default=Path(".data/demo-report.md"))
     args = parser.parse_args()
     headers = (
         {"Authorization": f"Bearer {os.environ['RGI_OWNER_TOKEN']}"} if os.getenv("RGI_OWNER_TOKEN") else {}
@@ -24,7 +25,7 @@ def main():
 
         health = check(api.get("/api/health"))
         if health["database"] != "online" or not health["worker"]["online"]:
-            raise SystemExit("Start PostgreSQL, migrations and a real worker first")
+            raise SystemExit("Initialize SQLite and start the API and a real worker first")
         collection = check(api.post("/api/collections", json={"name": f"Synthetic demo {time.time_ns()}"}))
         cid = collection["id"]
         for path in sorted(Path("fixtures").glob("*.pdf")):
@@ -66,7 +67,7 @@ def main():
             if detail["status"] == "complete":
                 report = api.get(f"/api/runs/{run['id']}/report")
                 report.raise_for_status()
-                out = Path(".data/demo-report.md")
+                out = args.output
                 out.parent.mkdir(parents=True, exist_ok=True)
                 out.write_text(report.text)
                 print(f"{detail['provenance']}\nRun {run['id']}\nReport: {out}")

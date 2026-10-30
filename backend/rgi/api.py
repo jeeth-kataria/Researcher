@@ -6,7 +6,7 @@ from fastapi import FastAPI, HTTPException, Depends, Header, UploadFile, File, F
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import PlainTextResponse, FileResponse
 from .config import settings
-from .db import connect, one, many, jsonb
+from .db import connect, one, many, json_value
 from .schemas import CollectionInput, RunInput, ResumeInput
 from .jobs import enqueue
 from .ingest import upload
@@ -45,7 +45,7 @@ def health():
     try:
         one("SELECT 1")
         worker = one(
-            "SELECT max(heartbeat_at) AS last,coalesce(bool_or(heartbeat_at>now()-interval '30 seconds'),false) AS online FROM workers"
+            "SELECT max(heartbeat_at) AS last,coalesce(max(heartbeat_at>after_seconds(-30)),false) AS online FROM workers"
         )
         return {
             "api": "online",
@@ -54,6 +54,9 @@ def health():
             "read_only": settings().read_only,
             "parser": settings().parser,
             "embedder": settings().embedder,
+            "database_engine": "sqlite",
+            "primary_provider": "groq",
+            "groq_configured": bool(settings().groq_api_key and settings().free_tier_ack),
             "gemini_configured": bool(settings().gemini_api_key and settings().free_tier_ack),
         }
     except Exception:
@@ -64,6 +67,7 @@ def health():
             "worker": {"online": False},
             "read_only": settings().read_only,
             "gemini_configured": False,
+            "groq_configured": False,
         }
 
 
@@ -76,7 +80,7 @@ def collections():
 def create_collection(body: CollectionInput):
     with connect() as conn:
         return conn.execute(
-            "INSERT INTO collections(id,name,scope) VALUES (%s,%s,%s) RETURNING *",
+            "INSERT INTO collections(id,name,scope) VALUES (?,?,?) RETURNING *",
             (uuid4(), body.name, body.scope),
         ).fetchone()
 
@@ -85,7 +89,7 @@ def create_collection(body: CollectionInput):
 def papers(collection_id: UUID):
     return many(
         """SELECT p.id AS paper_id,p.title,p.source_url,d.* FROM papers p
-        JOIN document_versions d ON d.paper_id=p.id WHERE p.collection_id=%s
+        JOIN document_versions d ON d.paper_id=p.id WHERE p.collection_id=?
         ORDER BY p.created_at,d.created_at DESC""",
         (collection_id,),
     )
@@ -113,7 +117,7 @@ def evidence(collection_id: UUID, evidence_id: UUID):
 
 @app.get("/api/versions/{version_id}/pdf", dependencies=[Depends(access)])
 def pdf(version_id: UUID):
-    doc = one("SELECT storage_key FROM document_versions WHERE id=%s", (version_id,))
+    doc = one("SELECT storage_key FROM document_versions WHERE id=?", (version_id,))
     if not doc:
         raise HTTPException(404, "Document version not found")
     return FileResponse(
@@ -128,15 +132,16 @@ def create_run(body: RunInput):
     manifest = latest_manifest(body.collection_id)
     if not manifest:
         raise ValueError("Ingest at least one supported PDF before starting research")
-    if body.provider == "gemini":
-        if not settings().gemini_api_key or not settings().free_tier_ack:
+    if body.provider != "fixture":
+        key = settings().groq_api_key if body.provider == "groq" else settings().gemini_api_key
+        if not key or not settings().free_tier_ack:
             raise ValueError("Configure key and explicitly acknowledge billing-disabled free tier in .env")
         if any(m["embedding_id"].startswith("fixture") for m in manifest):
             raise ValueError("Fixture embeddings cannot be used for real research; ingest using BGE")
     provenance = (
         "SYNTHETIC FIXTURE — not real research"
         if body.provider == "fixture"
-        else "Gemini corpus-only research; requires human verification"
+        else f"{body.provider.title()} corpus-only research; requires human verification"
     )
     # Serialize UUIDs into an immutable JSON corpus manifest.
     manifest = [{k: str(v) for k, v in m.items()} for m in manifest]
@@ -148,7 +153,7 @@ def create_run(body: RunInput):
     with connect() as conn:
         run = conn.execute(
             """INSERT INTO runs(id,collection_id,question,scope,mode,provider,model,
-            provenance,manifest,config) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) RETURNING *""",
+            provenance,manifest,config) VALUES (?,?,?,?,?,?,?,?,?,?) RETURNING *""",
             (
                 uuid4(),
                 body.collection_id,
@@ -156,10 +161,14 @@ def create_run(body: RunInput):
                 body.scope,
                 body.mode,
                 body.provider,
-                settings().gemini_model if body.provider == "gemini" else "fixture-v1",
+                settings().groq_model
+                if body.provider == "groq"
+                else settings().gemini_model
+                if body.provider == "gemini"
+                else "fixture-v1",
                 provenance,
-                jsonb(manifest),
-                jsonb(config),
+                json_value(manifest),
+                json_value(config),
             ),
         ).fetchone()
         enqueue(conn, "research", run["id"])
@@ -174,10 +183,10 @@ def runs():
 
 @app.get("/api/runs/{run_id}", dependencies=[Depends(access)])
 def run_detail(run_id: UUID):
-    run = one("SELECT * FROM runs WHERE id=%s", (run_id,))
+    run = one("SELECT * FROM runs WHERE id=?", (run_id,))
     if not run:
         raise HTTPException(404, "Run not found")
-    return {**run, "events": many("SELECT * FROM events WHERE run_id=%s ORDER BY id", (run_id,))}
+    return {**run, "events": many("SELECT * FROM events WHERE run_id=? ORDER BY id", (run_id,))}
 
 
 @app.post("/api/runs/{run_id}/cancel", dependencies=[Depends(writable)])
@@ -186,11 +195,11 @@ def cancel(run_id: UUID):
         row = conn.execute(
             """UPDATE runs SET cancel_requested=true,updated_at=now(),
             status=CASE WHEN status IN ('queued','waiting_for_quota','paused') THEN 'cancelled' ELSE status END
-            WHERE id=%s RETURNING *""",
+            WHERE id=? RETURNING *""",
             (run_id,),
         ).fetchone()
         conn.execute(
-            "UPDATE jobs SET status='cancelled' WHERE target_id=%s AND status IN ('queued','waiting_for_quota','paused')",
+            "UPDATE jobs SET status='cancelled' WHERE target_id=? AND status IN ('queued','waiting_for_quota','paused')",
             (run_id,),
         )
         if not row:
@@ -201,11 +210,11 @@ def cancel(run_id: UUID):
 @app.post("/api/runs/{run_id}/resume", dependencies=[Depends(writable)])
 def resume(run_id: UUID, body: ResumeInput = Body(default=ResumeInput())):
     with connect() as conn:
-        original = conn.execute("SELECT * FROM runs WHERE id=%s FOR UPDATE", (run_id,)).fetchone()
+        original = conn.execute("SELECT * FROM runs WHERE id=?", (run_id,)).fetchone()
         if not original:
             raise HTTPException(404, "Run not found")
         uncertain = conn.execute(
-            "SELECT cache_key FROM llm_calls WHERE run_id=%s AND status IN ('pending','uncertain')", (run_id,)
+            "SELECT cache_key FROM llm_calls WHERE run_id=? AND status IN ('pending','uncertain')", (run_id,)
         ).fetchall()
         if uncertain and not body.acknowledge_duplicate_call:
             raise HTTPException(
@@ -215,15 +224,15 @@ def resume(run_id: UUID, body: ResumeInput = Body(default=ResumeInput())):
             raise HTTPException(409, "Only quota/config-paused runs can resume")
         if body.budget:
             config = {**original["config"], "budget": body.budget.model_dump()}
-            conn.execute("UPDATE runs SET config=%s WHERE id=%s", (jsonb(config), run_id))
+            conn.execute("UPDATE runs SET config=? WHERE id=?", (json_value(config), run_id))
         if uncertain:
             # Unknown prior usage stays conservatively charged. Repeating is explicit.
             conn.execute(
-                "UPDATE runs SET tokens=tokens+reserved_tokens,reserved_tokens=0,usage_unknown=true WHERE id=%s",
+                "UPDATE runs SET tokens=tokens+reserved_tokens,reserved_tokens=0,usage_unknown=true WHERE id=?",
                 (run_id,),
             )
             conn.execute(
-                "UPDATE llm_calls SET status='acknowledged_retry' WHERE run_id=%s AND status IN ('pending','uncertain')",
+                "UPDATE llm_calls SET status='acknowledged_retry' WHERE run_id=? AND status IN ('pending','uncertain')",
                 (run_id,),
             )
         from .jobs import event
@@ -240,14 +249,14 @@ def resume(run_id: UUID, body: ResumeInput = Body(default=ResumeInput())):
         )
         row = conn.execute(
             """UPDATE runs SET status='queued',error=NULL,updated_at=now()
-            WHERE id=%s AND status IN ('waiting_for_quota','paused') AND NOT cancel_requested RETURNING *""",
+            WHERE id=? AND status IN ('waiting_for_quota','paused') AND NOT cancel_requested RETURNING *""",
             (run_id,),
         ).fetchone()
         if not row:
             raise HTTPException(409, "Only quota/config-paused runs can resume")
         conn.execute(
-            """UPDATE jobs SET status='queued',owner=NULL,lease_until=NULL,available_at=greatest(now(),available_at),
-            attempts=0,error=NULL WHERE target_id=%s AND kind='research'""",
+            """UPDATE jobs SET status='queued',owner=NULL,lease_until=NULL,available_at=max(now(),available_at),
+            attempts=0,error=NULL WHERE target_id=? AND kind='research'""",
             (run_id,),
         )
         return row
@@ -255,7 +264,7 @@ def resume(run_id: UUID, body: ResumeInput = Body(default=ResumeInput())):
 
 @app.get("/api/runs/{run_id}/report", dependencies=[Depends(access)], response_class=PlainTextResponse)
 def report(run_id: UUID):
-    row = one("SELECT report FROM runs WHERE id=%s", (run_id,))
+    row = one("SELECT report FROM runs WHERE id=?", (run_id,))
     if not row or not row["report"]:
         raise HTTPException(404, "Report not ready")
     return PlainTextResponse(

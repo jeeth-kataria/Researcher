@@ -24,3 +24,5 @@ citation. Provider errors expose safe categories, not raw request prompts or key
 
 The checkpoint schema is created only by `scripts/setup_checkpoints.py`. The API does
 not create tables at startup, ingest inline, or launch process-local research tasks.
+
+Primary research provider is `groq` (the RunInput default). Explicit alternatives: `gemini`, `fixture`. Health includes `database_engine: sqlite`, `primary_provider: groq`, and sanitized configured flags. Keys never appear in health. SQLite must be initialized with `scripts/init_db.py` before services start.

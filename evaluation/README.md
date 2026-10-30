@@ -2,13 +2,13 @@
 
 `draft_cases.json` contains generated synthetic draft relevance labels, **pending
 human review**. `results.fixture.json` is an actual run of deterministic fixture
-functions (not Postgres retrieval, not an LLM, not a full worker benchmark). It exists
+functions (not SQLite retrieval, not an LLM, not a full worker benchmark). It exists
 to verify reporting/denominators. It cannot show scientific quality or multi-agent
 superiority. `pipeline-measurements.json` records measured parse time and process peak
 RSS; missing parsers explicitly say not run. No results are human-validated yet.
 
 `uv run python -m rgi.evaluate --collection UUID --provider fixture` evaluates actual
-persisted API/worker runs in RAG, single and multi modes, for each case. Choose Gemini
+persisted API/worker runs in RAG, single and multi modes, for each case. Choose Groq
 explicitly only after free-tier acknowledgement; it consumes quota. All modes share
 corpus/model and the same declared ceiling. Their actual calls/tokens differ and are
 reported, not disguised as equal. The harness aborts on corpus version changes, quota

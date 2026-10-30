@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 from uuid import uuid4
 import pytest
-from rgi.embeddings import FixtureEmbedder, vector_sql
+from rgi.embeddings import FixtureEmbedder, vector_json
 from rgi.ingest import Item, chunk_items, parse_pdf
 from rgi.storage import path_for, store_pdf
 from rgi.schemas import RoleOutput, Claim, Citation, MatrixRow, Review, Experiment
@@ -33,7 +33,7 @@ def test_heading_budget_and_invalid_vector():
     assert chunks[0]["heading"] == "header " * 200
     assert chunks[0]["payload"].startswith("Document section")
     with pytest.raises(ValueError):
-        vector_sql([float("nan")] * 384)
+        vector_json([float("nan")] * 384)
 
 
 def test_storage_bounds_and_content_hash(isolated_settings):

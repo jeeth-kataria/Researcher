@@ -1,3 +1,6 @@
+> Historical ADR: PostgreSQL/Gemini-first details are superseded by the user-approved
+> [ADR 004](004-sqlite-and-groq.md). Use README and current architecture/setup docs.
+
 # ADR 003 — static examples before optional hosted compute (accepted)
 Requirement: usable public example at zero required cost without laptop availability.
 Choice: Vite demo-mode static build with original synthetic PDFs, report and JSON.

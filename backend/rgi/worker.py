@@ -20,18 +20,18 @@ def process(job, owner):
         if job["kind"] == "ingest":
             ingest(job, owner)
         else:
-            execute(one("SELECT * FROM runs WHERE id=%s", (job["target_id"],)), job, owner)
+            execute(one("SELECT * FROM runs WHERE id=?", (job["target_id"],)), job, owner)
         if job["kind"] == "research":
             check_cancel(job["target_id"])
         with connect() as conn:
             fence(conn, job["id"], owner)
             conn.execute(
-                "UPDATE jobs SET status='complete',lease_until=NULL,updated_at=now() WHERE id=%s",
+                "UPDATE jobs SET status='complete',lease_until=NULL,updated_at=now() WHERE id=?",
                 (job["id"],),
             )
             if job["kind"] == "research":
                 conn.execute(
-                    "UPDATE runs SET status='complete',updated_at=now() WHERE id=%s", (job["target_id"],)
+                    "UPDATE runs SET status='complete',updated_at=now() WHERE id=?", (job["target_id"],)
                 )
     except LostLease:
         log.warning("Job lease lost; stale owner stopped")
@@ -60,17 +60,17 @@ def process(job, owner):
             with connect() as conn:
                 fence(conn, job["id"], owner)
                 conn.execute(
-                    """UPDATE jobs SET status=%s,error=%s,owner=NULL,lease_until=NULL,
-                    available_at=now()+make_interval(secs => %s),updated_at=now() WHERE id=%s""",
+                    """UPDATE jobs SET status=?,error=?,owner=NULL,lease_until=NULL,
+                    available_at=after_seconds(?),updated_at=now() WHERE id=?""",
                     (status, message, min(60, 2 ** job["attempts"]), job["id"]),
                 )
                 if isinstance(exc, CheckpointBusy):
-                    conn.execute("UPDATE jobs SET attempts=greatest(0,attempts-1) WHERE id=%s", (job["id"],))
+                    conn.execute("UPDATE jobs SET attempts=max(0,attempts-1) WHERE id=?", (job["id"],))
                 if isinstance(exc, QuotaPause):
-                    conn.execute("UPDATE jobs SET available_at=%s WHERE id=%s", (exc.retry_at, job["id"]))
+                    conn.execute("UPDATE jobs SET available_at=? WHERE id=?", (exc.retry_at, job["id"]))
                 table = "runs" if job["kind"] == "research" else "document_versions"
                 conn.execute(
-                    f"UPDATE {table} SET status=%s,error=%s WHERE id=%s", (status, message, job["target_id"])
+                    f"UPDATE {table} SET status=?,error=? WHERE id=?", (status, message, job["target_id"])
                 )
                 if job["kind"] == "research":
                     event(conn, job["target_id"], "worker", status, {"message": message})
@@ -115,7 +115,7 @@ def main():
         stop.set()
         thread.join(timeout=5)
         with connect() as conn:
-            conn.execute("DELETE FROM workers WHERE id=%s", (owner,))
+            conn.execute("DELETE FROM workers WHERE id=?", (owner,))
 
 
 if __name__ == "__main__":

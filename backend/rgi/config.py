@@ -6,13 +6,15 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="RGI_", env_file=".env", extra="ignore")
-    database_url: str = "postgresql://rgi:rgi@127.0.0.1:5433/rgi"
+    database_path: Path = Path(".data/researcher.sqlite3")
     storage_dir: Path = Path(".data")
     read_only: bool = False
     owner_token: str = ""
     cors_origins: list[str] = ["http://localhost:5173", "http://127.0.0.1:5173"]
     parser: Literal["docling", "pypdf"] = "docling"
     embedder: Literal["bge", "fixture"] = "bge"
+    groq_api_key: str = ""
+    groq_model: str = "openai/gpt-oss-120b"
     gemini_api_key: str = ""
     gemini_model: str = "gemini-2.5-flash"
     free_tier_ack: bool = False

@@ -7,9 +7,9 @@ from importlib.metadata import version as package_version
 from time import monotonic
 from uuid import UUID, uuid4, uuid5
 from .config import settings, configure_model_cache
-from .db import connect, one, jsonb
+from .db import connect, one, json_value
 from .storage import path_for, store_pdf
-from .embeddings import embedder, embedding_identity, vector_sql, PREPROCESS
+from .embeddings import embedder, embedding_identity, vector_json, PREPROCESS
 from .jobs import enqueue, fence
 
 
@@ -33,29 +33,29 @@ def processing_id():
 def upload(collection_id, title, data):
     if not title.strip() or len(title) > 200:
         raise ValueError("Paper title must contain 1–200 characters")
-    if not one("SELECT id FROM collections WHERE id=%s", (collection_id,)):
+    if not one("SELECT id FROM collections WHERE id=?", (collection_id,)):
         raise ValueError("Collection not found")
     digest, key = store_pdf(data)
     identity = processing_id()
     with connect() as conn:
         # Serialize collection count+insert; no upload race can exceed the configured limit.
-        conn.execute("SELECT id FROM collections WHERE id=%s FOR UPDATE", (collection_id,))
+        conn.execute("SELECT id FROM collections WHERE id=?", (collection_id,))
         paper = conn.execute(
-            "SELECT * FROM papers WHERE collection_id=%s AND title=%s", (collection_id, title)
+            "SELECT * FROM papers WHERE collection_id=? AND title=?", (collection_id, title)
         ).fetchone()
         if not paper:
             count = conn.execute(
-                "SELECT count(*) AS n FROM papers WHERE collection_id=%s", (collection_id,)
+                "SELECT count(*) AS n FROM papers WHERE collection_id=?", (collection_id,)
             ).fetchone()["n"]
             if count >= settings().max_papers:
                 raise ValueError("Collection paper limit reached")
             paper = conn.execute(
-                "INSERT INTO papers(id,collection_id,title) VALUES (%s,%s,%s) RETURNING *",
+                "INSERT INTO papers(id,collection_id,title) VALUES (?,?,?) RETURNING *",
                 (uuid4(), collection_id, title),
             ).fetchone()
         prior = conn.execute(
             """SELECT * FROM document_versions
-            WHERE paper_id=%s AND sha256=%s AND processing_id=%s""",
+            WHERE paper_id=? AND sha256=? AND processing_id=?""",
             (paper["id"], digest, identity),
         ).fetchone()
         if prior:
@@ -63,7 +63,7 @@ def upload(collection_id, title, data):
         doc = conn.execute(
             """INSERT INTO document_versions
             (id,paper_id,sha256,storage_key,processing_id,parser,embedding_id)
-            VALUES (%s,%s,%s,%s,%s,%s,%s) RETURNING *""",
+            VALUES (?,?,?,?,?,?,?) RETURNING *""",
             (uuid4(), paper["id"], digest, key, identity, settings().parser, embedding_identity()),
         ).fetchone()
         enqueue(conn, "ingest", doc["id"])
@@ -162,14 +162,14 @@ def chunk_items(items, encoder, target=420):
 
 
 def ingest(job, owner):
-    doc = one("SELECT * FROM document_versions WHERE id=%s", (job["target_id"],))
+    doc = one("SELECT * FROM document_versions WHERE id=?", (job["target_id"],))
     if doc["status"] == "ready":
         return
     if doc["processing_id"] != processing_id():
         raise ValueError("Worker processing configuration differs from submitted document; restore it")
     with connect() as conn:
         fence(conn, job["id"], owner)
-        conn.execute("UPDATE document_versions SET status='parsing',error=NULL WHERE id=%s", (doc["id"],))
+        conn.execute("UPDATE document_versions SET status='parsing',error=NULL WHERE id=?", (doc["id"],))
     expected_parser_version = {"docling": "2.36.1", "pypdf": "5.6.0"}[doc["parser"]]
     if package_version(doc["parser"]) != expected_parser_version:
         raise ValueError("Parser installed version differs from processing identity; use the lockfile")
@@ -217,7 +217,7 @@ def ingest(job, owner):
             pid = uuid5(UUID(str(doc["id"])), str(n))
             conn.execute(
                 """INSERT INTO passages(id,version_id,ordinal,heading,text,page,item_ids,boxes,
-                token_count,embedding) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s::vector)
+                token_count,embedding) VALUES (?,?,?,?,?,?,?,?,?,?)
                 ON CONFLICT (version_id,ordinal) DO NOTHING""",
                 (
                     pid,
@@ -226,14 +226,14 @@ def ingest(job, owner):
                     chunk["heading"],
                     chunk["text"],
                     chunk["page"],
-                    jsonb(chunk["item_ids"]),
-                    jsonb(chunk["boxes"]),
+                    json_value(chunk["item_ids"]),
+                    json_value(chunk["boxes"]),
                     chunk["token_count"],
-                    vector_sql(vec),
+                    vector_json(vec),
                 ),
             )
         conn.execute(
-            """UPDATE document_versions SET status='ready',warnings=%s,artifact_key=%s,error=NULL
-            WHERE id=%s""",
-            (jsonb(artifact["warnings"]), key, doc["id"]),
+            """UPDATE document_versions SET status='ready',warnings=?,artifact_key=?,error=NULL
+            WHERE id=?""",
+            (json_value(artifact["warnings"]), key, doc["id"]),
         )

@@ -5,8 +5,7 @@ WORKDIR /app
 COPY pyproject.toml uv.lock ./
 COPY backend ./backend
 RUN uv sync --locked --no-dev
-COPY migrations ./migrations
-COPY alembic.ini ./
+COPY scripts/init_db.py ./scripts/init_db.py
 EXPOSE 8000
 # Loopback default. A reviewed hosted deployment can explicitly override host/port.
 CMD ["uv", "run", "--no-sync", "uvicorn", "rgi.api:app", "--host", "127.0.0.1", "--port", "8000"]

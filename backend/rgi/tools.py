@@ -39,7 +39,7 @@ class Tools:
         with connect() as conn:
             fence(conn, self.job["id"], self.owner)
             row = conn.execute(
-                """UPDATE runs SET tool_calls=tool_calls+1 WHERE id=%s AND tool_calls<%s
+                """UPDATE runs SET tool_calls=tool_calls+1 WHERE id=? AND tool_calls<?
                 RETURNING tool_calls""",
                 (self.run["id"], self.run["config"]["budget"]["max_tool_calls"]),
             ).fetchone()
@@ -70,7 +70,7 @@ class Tools:
                 result = matched
             else:
                 result = many(
-                    "SELECT role,payload FROM artifacts WHERE run_id=%s AND role='methods'", (self.run["id"],)
+                    "SELECT role,payload FROM artifacts WHERE run_id=? AND role='methods'", (self.run["id"],)
                 )
         with connect() as conn:
             fence(conn, self.job["id"], self.owner)

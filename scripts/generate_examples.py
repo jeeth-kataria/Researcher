@@ -125,7 +125,7 @@ def main():
     (OUT / "report.md").write_text(run["report"])
     (OUT / "run.json").write_text(json.dumps(run, ensure_ascii=False, indent=2))
     (ROOT / "fixtures/README.md").write_text(
-        "# Original synthetic fixtures\n\nCreated for this repository. No third-party PDF redistribution.\nThese invented toy observations are NOT research results. Regenerate with\n`uv run python scripts/generate_examples.py`. Static example generation calls\nthe deterministic fixture provider directly; it does not verify jobs or PostgreSQL.\n"
+        "# Original synthetic fixtures\n\nCreated for this repository. No third-party PDF redistribution.\nThese invented toy observations are NOT research results. Regenerate with\n`uv run python scripts/generate_examples.py`. Static example generation calls\nthe deterministic fixture provider directly; it does not verify jobs or SQLite persistence.\n"
     )
     print(f"Generated {len(evidence)} original synthetic PDFs and labeled example, no provider quota used")
 

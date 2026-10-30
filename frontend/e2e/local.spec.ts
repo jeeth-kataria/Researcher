@@ -1,16 +1,10 @@
 import { test, expect } from "@playwright/test";
-// Opt in with a real local PostgreSQL/API/worker running in fixture parser/embedder mode.
-test.skip(
-  !process.env.RGI_E2E_LOCAL,
-  "Requires real local PostgreSQL, API and worker",
-);
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
+// Real on-disk SQLite + API + separate worker; explicitly synthetic PDF/provider.
 test("local upload → retrieval → persisted fixture run → reload", async ({
   page,
 }) => {
-  test.skip(
-    !process.env.RGI_E2E_LOCAL,
-    "Requires real local PostgreSQL, API and worker",
-  );
   await page.goto("/");
   await page
     .getByRole("button", { name: "Collection library", exact: true })
@@ -38,10 +32,22 @@ test("local upload → retrieval → persisted fixture run → reload", async ({
   await page
     .getByRole("button", { name: "New investigation", exact: true })
     .click();
+  await expect(page.getByLabel("Provider", { exact: true })).toHaveValue(
+    "groq",
+  );
+  await expect(
+    page.getByRole("button", { name: "Submit investigation" }),
+  ).toBeDisabled();
+  await page.getByLabel("Provider", { exact: true }).selectOption("fixture");
   await page.getByRole("button", { name: "Submit investigation" }).click();
   await expect(page.getByText("complete", { exact: true })).toBeVisible({
     timeout: 120000,
   });
+  await expect(
+    page.getByText("Synthetic fixture run · not real research", {
+      exact: true,
+    }),
+  ).toBeVisible();
   await page.reload();
   await page.getByRole("button", { name: "Run history", exact: true }).click();
   await page
@@ -51,4 +57,26 @@ test("local upload → retrieval → persisted fixture run → reload", async ({
   await expect(
     page.getByRole("button", { name: "Export report" }),
   ).toBeEnabled();
+});
+
+test("three-paper CLI demo uses actual API and worker with fixture provenance", async () => {
+  test.setTimeout(60000);
+  const result = await promisify(execFile)(
+    ".venv/bin/python",
+    [
+      "scripts/demo.py",
+      "--provider",
+      "fixture",
+      "--output",
+      ".data/e2e-demo-report.md",
+    ],
+    {
+      cwd: "..",
+      env: { ...process.env, RGI_OWNER_TOKEN: "" },
+      timeout: 45000,
+    },
+  );
+  expect(result.stdout).toContain("Retrieved 3 passages");
+  expect(result.stdout).toContain("SYNTHETIC FIXTURE");
+  expect(result.stdout).toContain(".data/e2e-demo-report.md");
 });

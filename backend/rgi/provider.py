@@ -94,11 +94,91 @@ def gemini_schema():
     return convert(raw)
 
 
+def groq_schema():
+    """Strict wire subset; all properties required. Full constraints checked locally."""
+    raw = RoleOutput.model_json_schema()
+    definitions = raw.get("$defs", {})
+
+    def convert(node):
+        if "$ref" in node:
+            return convert(definitions[node["$ref"].split("/")[-1]])
+        result = {key: node[key] for key in ("type", "enum", "description") if key in node}
+        if "properties" in node:
+            result["properties"] = {key: convert(value) for key, value in node["properties"].items()}
+            result["required"] = list(result["properties"])
+            result["additionalProperties"] = False
+        if "items" in node:
+            result["items"] = convert(node["items"])
+        return result
+
+    return convert(raw)
+
+
+class Groq:
+    def __init__(self, model=None):
+        self.model = model or settings().groq_model
+        if not settings().groq_api_key or not settings().free_tier_ack:
+            raise ConfigurationPause("Groq requires a server key and explicit free-plan acknowledgement")
+        if self.model not in ("openai/gpt-oss-120b", "openai/gpt-oss-20b"):
+            raise ConfigurationPause(
+                "Unverified Groq model; verify free access and structured-output support first"
+            )
+        from groq import Groq as Client
+
+        self.client = Client(api_key=settings().groq_api_key, max_retries=0, timeout=60)
+
+    def generate(self, role, prompt, state, max_output):
+        from groq import APIStatusError
+
+        try:
+            response = self.client.chat.completions.create(
+                model=self.model,
+                messages=[{"role": "system", "content": SYSTEM}, {"role": "user", "content": prompt}],
+                response_format={
+                    "type": "json_schema",
+                    "json_schema": {
+                        "name": "research_role",
+                        "strict": True,
+                        "schema": groq_schema(),
+                    },
+                },
+                max_completion_tokens=max_output,
+                reasoning_effort="low",
+                temperature=0.1,
+            )
+        except APIStatusError as exc:
+            if exc.status_code == 429:
+                raise QuotaPause(retry_at=retry_after(exc)) from None
+            error = exc.body.get("error", exc.body) if isinstance(exc.body, dict) else {}
+            if error.get("code") in ("json_validate_failed", "tool_use_failed"):
+                raise AmbiguousCall(
+                    "Groq generated a rejected output; usage is unknown and retry requires acknowledgement"
+                ) from None
+            if exc.status_code in (400, 401, 403, 404, 413, 422):
+                raise ConfigurationPause(
+                    "Groq rejected configuration, model access, schema or context size; no fallback attempted"
+                ) from None
+            raise RuntimeError("Groq request failed; call outcome may be unknown") from None
+        if not response.choices or response.choices[0].finish_reason != "stop":
+            raise RuntimeError("Groq output incomplete; usage/outcome require review before retry")
+        output = RoleOutput.model_validate_json(response.choices[0].message.content or "")
+        usage = response.usage
+        return (
+            output,
+            getattr(usage, "total_tokens", None),
+            {
+                "input_tokens": getattr(usage, "prompt_tokens", None),
+                "output_tokens": getattr(usage, "completion_tokens", None),
+            },
+        )
+
+
 class Gemini:
-    def __init__(self):
+    def __init__(self, model=None):
+        self.model = model or settings().gemini_model
         if not settings().gemini_api_key or not settings().free_tier_ack:
             raise ConfigurationPause("Gemini requires a key and billing-disabled free-tier acknowledgement")
-        if settings().gemini_model != "gemini-2.5-flash":
+        if self.model != "gemini-2.5-flash":
             raise ConfigurationPause(
                 "Unverified model; document current free availability before changing allowlist"
             )
@@ -120,7 +200,7 @@ class Gemini:
 
         try:
             response = self.client.models.generate_content(
-                model=settings().gemini_model,
+                model=self.model,
                 contents=prompt,
                 config=types.GenerateContentConfig(
                     system_instruction=SYSTEM,
@@ -258,9 +338,11 @@ class Fixture:
         return output, 0, {"input_tokens": 0, "output_tokens": 0, "fixture": True}
 
 
-def provider(name):
+def provider(name, model=None):
     if name == "fixture":
         return Fixture()
     if name == "gemini":
-        return Gemini()
+        return Gemini(model)
+    if name == "groq":
+        return Groq(model)
     raise ConfigurationPause("Unknown provider; no fallback")

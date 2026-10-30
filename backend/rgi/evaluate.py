@@ -101,10 +101,10 @@ def main():
     parser.add_argument(
         "--offline",
         action="store_true",
-        help="Fixture functions only; no PostgreSQL, no research quality claim",
+        help="Fixture functions only; no database retrieval, no research quality claim",
     )
     parser.add_argument("--collection", help="Existing ready collection UUID; required unless --offline")
-    parser.add_argument("--provider", choices=["fixture", "gemini"], default="fixture")
+    parser.add_argument("--provider", choices=["fixture", "groq", "gemini"], default="fixture")
     parser.add_argument("--url", default="http://127.0.0.1:8000")
     parser.add_argument("--output", type=Path, default=Path(".data/evaluation.json"))
     parser.add_argument(

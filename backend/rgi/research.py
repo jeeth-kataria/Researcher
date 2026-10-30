@@ -4,8 +4,8 @@ import hashlib
 import json
 from time import monotonic
 from typing import TypedDict
-from .db import one, connect, jsonb
-from .jobs import event, fence, check_cancel, CheckpointBusy
+from .db import one, connect, json_value
+from .jobs import event, fence, check_cancel
 from .schemas import RoleOutput
 from .provider import provider, SYSTEM, QuotaPause, AmbiguousCall, BudgetExceeded, ConfigurationPause
 from .evidence import validate_output
@@ -89,7 +89,7 @@ class Investigation:
         key = hashlib.sha256((str(self.run["id"]) + reusable_key).encode()).hexdigest()
         with connect() as conn:
             fence(conn, self.job["id"], self.owner)
-            cached = conn.execute("SELECT * FROM llm_calls WHERE cache_key=%s", (key,)).fetchone()
+            cached = conn.execute("SELECT * FROM llm_calls WHERE cache_key=?", (key,)).fetchone()
             if cached and cached["status"] == "complete":
                 return RoleOutput.model_validate(cached["response"])
             if cached and cached["status"] in ("pending", "uncertain"):
@@ -98,7 +98,7 @@ class Investigation:
                 )
             extraction = (
                 conn.execute(
-                    "SELECT payload FROM extraction_cache WHERE cache_key=%s", (reusable_key,)
+                    "SELECT payload FROM extraction_cache WHERE cache_key=?", (reusable_key,)
                 ).fetchone()
                 if role == "methods"
                 else None
@@ -106,7 +106,7 @@ class Investigation:
             if extraction:
                 event(conn, self.run["id"], role, "cache_hit", {"cache_key": reusable_key})
                 return RoleOutput.model_validate(extraction["payload"])
-            generator = provider(self.run["provider"])
+            generator = provider(self.run["provider"], self.run["model"])
             # Construct/configure before recording call intent: a missing local key
             # is a known no-call failure and must not trigger duplicate-call warnings.
             # UTF-8 byte count + schema/system bytes is a conservative token ceiling,
@@ -121,8 +121,8 @@ class Investigation:
                 )
             )
             reservation = conn.execute(
-                """UPDATE runs SET calls=calls+1,reserved_tokens=reserved_tokens+%s,
-                updated_at=now() WHERE id=%s AND calls<%s AND tokens+reserved_tokens+%s<=%s RETURNING id""",
+                """UPDATE runs SET calls=calls+1,reserved_tokens=reserved_tokens+?,
+                updated_at=now() WHERE id=? AND calls<? AND tokens+reserved_tokens+?<=? RETURNING id""",
                 (reserve, self.run["id"], budget["max_calls"], reserve, budget["max_tokens"]),
             ).fetchone()
             if not reservation:
@@ -130,7 +130,7 @@ class Investigation:
                     "Application call/token budget reached; increase limits explicitly to resume"
                 )
             conn.execute(
-                """INSERT INTO llm_calls(cache_key,run_id,role,status) VALUES (%s,%s,%s,'pending')
+                """INSERT INTO llm_calls(cache_key,run_id,role,status) VALUES (?,?,?,'pending')
                 ON CONFLICT(cache_key) DO UPDATE SET status='pending',updated_at=now()""",
                 (key, self.run["id"], role),
             )
@@ -144,11 +144,11 @@ class Investigation:
             with connect() as conn:
                 fence(conn, self.job["id"], self.owner)
                 conn.execute(
-                    "UPDATE llm_calls SET status='quota_or_config_rejected',updated_at=now() WHERE cache_key=%s",
+                    "UPDATE llm_calls SET status='quota_or_config_rejected',updated_at=now() WHERE cache_key=?",
                     (key,),
                 )
                 conn.execute(
-                    "UPDATE runs SET reserved_tokens=reserved_tokens-%s WHERE id=%s",
+                    "UPDATE runs SET reserved_tokens=reserved_tokens-? WHERE id=?",
                     (reserve, self.run["id"]),
                 )
             raise
@@ -156,27 +156,34 @@ class Investigation:
             with connect() as conn:
                 fence(conn, self.job["id"], self.owner)
                 conn.execute(
-                    "UPDATE llm_calls SET status='uncertain',updated_at=now() WHERE cache_key=%s", (key,)
+                    "UPDATE llm_calls SET status='uncertain',updated_at=now() WHERE cache_key=?", (key,)
                 )
-                conn.execute("UPDATE runs SET usage_unknown=true WHERE id=%s", (self.run["id"],))
-            raise
+                conn.execute("UPDATE runs SET usage_unknown=true WHERE id=?", (self.run["id"],))
+            raise AmbiguousCall(
+                "Provider call outcome or response validation is uncertain; explicit retry acknowledgement required"
+            ) from None
         with connect() as conn:
             fence(conn, self.job["id"], self.owner)
             actual = reserve if used is None else used
             conn.execute(
-                """UPDATE runs SET reserved_tokens=reserved_tokens-%s,tokens=tokens+%s,
-                usage_unknown=usage_unknown OR %s,updated_at=now() WHERE id=%s""",
+                """UPDATE runs SET reserved_tokens=reserved_tokens-?,tokens=tokens+?,
+                usage_unknown=usage_unknown OR ?,updated_at=now() WHERE id=?""",
                 (reserve, actual, used is None, self.run["id"]),
             )
             conn.execute(
-                """UPDATE llm_calls SET status='complete',response=%s,input_tokens=%s,
-                output_tokens=%s,updated_at=now() WHERE cache_key=%s""",
-                (jsonb(output.model_dump(mode="json")), usage["input_tokens"], usage["output_tokens"], key),
+                """UPDATE llm_calls SET status='complete',response=?,input_tokens=?,
+                output_tokens=?,updated_at=now() WHERE cache_key=?""",
+                (
+                    json_value(output.model_dump(mode="json")),
+                    usage["input_tokens"],
+                    usage["output_tokens"],
+                    key,
+                ),
             )
             if role == "methods":
                 conn.execute(
-                    "INSERT INTO extraction_cache(cache_key,payload) VALUES (%s,%s) ON CONFLICT DO NOTHING",
-                    (reusable_key, jsonb(output.model_dump(mode="json"))),
+                    "INSERT INTO extraction_cache(cache_key,payload) VALUES (?,?) ON CONFLICT DO NOTHING",
+                    (reusable_key, json_value(output.model_dump(mode="json"))),
                 )
             event(
                 conn,
@@ -228,7 +235,7 @@ class Investigation:
             queries = list(state.get("queries", []))
             # A deterministic counter-search gives the reviewer an independent retrieval
             # opportunity. It is a bounded search, not independent scientific verification.
-            used_tools = one("SELECT tool_calls FROM runs WHERE id=%s", (self.run["id"],))["tool_calls"]
+            used_tools = one("SELECT tool_calls FROM runs WHERE id=?", (self.run["id"],))["tool_calls"]
             for gap in dumped["gaps"][: self.run["config"]["budget"]["max_followups"]]:
                 if used_tools >= self.run["config"]["budget"]["max_tool_calls"]:
                     break
@@ -242,7 +249,7 @@ class Investigation:
                 used_tools += 1
             delta["queries"] = queries
             refs = list(dict.fromkeys(c["evidence_id"] for g in dumped["gaps"] for c in g["citations"]))
-            remaining = one("SELECT tool_calls FROM runs WHERE id=%s", (self.run["id"],))["tool_calls"]
+            remaining = one("SELECT tool_calls FROM runs WHERE id=?", (self.run["id"],))["tool_calls"]
             available = self.run["config"]["budget"]["max_tool_calls"] - remaining
             for evidence_id in refs[: max(0, available)]:
                 context_result = serializable(self.tools.call("read_context", {"evidence_id": evidence_id}))
@@ -254,9 +261,9 @@ class Investigation:
         with connect() as conn:
             fence(conn, self.job["id"], self.owner)
             conn.execute(
-                """INSERT INTO artifacts(run_id,role,payload) VALUES (%s,%s,%s)
+                """INSERT INTO artifacts(run_id,role,payload) VALUES (?,?,?)
                 ON CONFLICT(run_id,role) DO UPDATE SET payload=excluded.payload""",
-                (self.run["id"], role, jsonb(dumped)),
+                (self.run["id"], role, json_value(dumped)),
             )
         return delta
 
@@ -267,8 +274,8 @@ class Investigation:
         with connect() as conn:
             fence(conn, self.job["id"], self.owner)
             conn.execute(
-                "UPDATE runs SET result=%s,report=%s,updated_at=now() WHERE id=%s",
-                (jsonb(result), report, self.run["id"]),
+                "UPDATE runs SET result=?,report=?,updated_at=now() WHERE id=?",
+                (json_value(result), report, self.run["id"]),
             )
             event(
                 conn,
@@ -324,33 +331,22 @@ def build_graph(investigation, checkpointer):
 
 
 def execute(run, job, owner):
-    from .db import checkpoints
+    from .db import checkpoints, run_lock
 
     check_cancel(run["id"])
-    with connect() as conn:
-        fence(conn, job["id"], owner)
-        conn.execute("UPDATE runs SET status='running',error=NULL,updated_at=now() WHERE id=%s", (run["id"],))
-    # Local/direct or session-pool connection: prepared statements disabled on the explicit connection.
-    # Migrations run saver.setup() separately, never from an API request.
-    with checkpoints() as saver:
-        # Checkpoint writes happen after a node returns, outside the node's fenced
-        # transaction. A session advisory lock serializes old/new graph invocations
-        # even across the lease-expiry window; job fencing still rejects old owners.
-        lock = saver.conn.execute(
-            "SELECT pg_try_advisory_lock(hashtextextended(%s,0)) AS acquired", (str(run["id"]),)
-        ).fetchone()
-        if not lock["acquired"]:
-            raise CheckpointBusy(
-                "Prior checkpoint session is finishing; retry dispatch without spending quota"
+    # The file lock spans each node return and subsequent checkpoint commit.
+    # Lease fencing separately prevents a stale worker writing application data.
+    with run_lock(run["id"]):
+        with connect() as conn:
+            fence(conn, job["id"], owner)
+            conn.execute(
+                "UPDATE runs SET status='running',error=NULL,updated_at=now() WHERE id=?", (run["id"],)
             )
-        try:
+        with checkpoints() as saver:
             graph = build_graph(Investigation(run, job, owner), saver)
             config = {"configurable": {"thread_id": str(run["id"])}, "recursion_limit": 20}
             snapshot = graph.get_state(config)
             if snapshot.values and not snapshot.next:
-                # Recover crash between final checkpoint and marking dispatch complete.
                 return snapshot.values
             initial = None if snapshot.values else {"run_id": str(run["id"]), "manifest": run["manifest"]}
             return graph.invoke(initial, config=config)
-        finally:
-            saver.conn.execute("SELECT pg_advisory_unlock(hashtextextended(%s,0))", (str(run["id"]),))

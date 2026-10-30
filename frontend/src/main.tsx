@@ -67,6 +67,7 @@ function App() {
     worker: { online: boolean };
     read_only: boolean;
     gemini_configured?: boolean;
+    groq_configured?: boolean;
   } | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -80,7 +81,7 @@ function App() {
   const [scope, setScope] = useState(
     "Agent memory and long-context reliability; uploaded corpus only.",
   );
-  const [provider, setProvider] = useState("fixture");
+  const [provider, setProvider] = useState("groq");
   const [mode, setMode] = useState("multi");
   const [budget, setBudget] = useState({
     max_calls: 10,
@@ -508,14 +509,20 @@ function App() {
               </button>
             </div>
           )}
-          {example && (
+          {(example ||
+            (screen === "workspace" && run?.provider === "fixture")) && (
             <div className="notice fixture">
               <FlaskConical size={18} />
               <div>
-                <strong>Synthetic example · read-only</strong>
+                <strong>
+                  {example
+                    ? "Synthetic example · read-only"
+                    : "Synthetic fixture run · not real research"}
+                </strong>
                 <span>
-                  Original toy papers and deterministic fixture responses. This
-                  is a software demonstration, not a real research run.
+                  {example
+                    ? "Original toy papers and deterministic fixture responses. This is a software demonstration, not a real research run."
+                    : "Deterministic fixture responses test the software workflow. Uploaded evidence does not turn fixture output into a real research result."}
                 </span>
               </div>
               <Badge>NO LLM CALLS</Badge>
@@ -527,8 +534,8 @@ function App() {
               <div>
                 <strong>Local services unavailable</strong>
                 <span>
-                  Start PostgreSQL, apply migrations, and run the API. The
-                  example explorer works without services or keys.
+                  Initialize SQLite and run the API. The example explorer works
+                  without services or keys.
                 </span>
               </div>
               <button className="button" onClick={() => setExample(true)}>
@@ -1387,9 +1394,13 @@ function App() {
                 <label>
                   Provider
                   <select
+                    aria-label="Provider"
                     value={provider}
                     onChange={(e) => setProvider(e.target.value)}
                   >
+                    <option value="groq">
+                      Groq · primary research provider
+                    </option>
                     <option value="fixture">
                       Deterministic fixture · not real research
                     </option>
@@ -1401,6 +1412,12 @@ function App() {
                     </option>
                   </select>
                 </label>
+                {provider === "groq" && !health?.groq_configured && (
+                  <p className="notice">
+                    Configure the Groq server key and free-plan acknowledgement
+                    to run research, or explicitly choose the synthetic fixture.
+                  </p>
+                )}
                 {provider === "fixture" && (
                   <p className="notice fixture">
                     Fixture runs test the software workflow. They do not assess
@@ -1409,7 +1426,12 @@ function App() {
                 )}
                 <button
                   className="button primary"
-                  disabled={!!readOnly || !collection || busy}
+                  disabled={
+                    !!readOnly ||
+                    !collection ||
+                    busy ||
+                    (provider === "groq" && !health?.groq_configured)
+                  }
                 >
                   Submit investigation <ArrowRight size={16} />
                 </button>

@@ -1,5 +1,5 @@
-from rgi.db import checkpoints
+"""Compatibility entrypoint: initializes the complete SQLite database."""
+from rgi.db import initialize
 
-with checkpoints() as saver:
-    saver.setup()
-print("PostgreSQL graph checkpoint schema ready")
+initialize()
+print("Local SQLite database and graph checkpoint schema ready")

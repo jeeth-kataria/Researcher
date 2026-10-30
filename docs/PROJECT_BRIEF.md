@@ -1,19 +1,25 @@
-# Stable project brief
-Research Gap Investigator is Jeeth's Python-first portfolio workbench. The complete
-original specification is ../Research_Gap_Investigator_Codex_Prompt.md.
+# Current project brief
 
-Required spend ₹0. Local PostgreSQL/pgvector, disk, API, CPU parser/embeddings and
-separate durable worker. React/TS/Vite/Tailwind UI. No paid fallbacks, account rotation,
-automatic generative-model downloads, cloud dependencies or autonomous experiments.
-Digitally generated English PDF uploads; configurable question/scope. Docling default,
-pypdf comparison baseline. Revision-pinned BGE-small 384D, actual tokenizer limits.
-Hybrid PostgreSQL FTS + exact vector RRF, inspector and immutable source references.
-Baseline before five-role bounded LangGraph with Postgres checkpoints. Claims need
-in-manifest exact quotations AND separate support judgments. Unknown stays unknown.
-Review before experiments. Candidate gaps never imply absolute novelty.
-Jobs require leases, heartbeat, cancellation, bounded budgets, recoverable state,
-quota pause/resume, at-least-once semantics and explicit external-call crash windows.
-Local-only default. Public example is static/read-only. Fixtures are conspicuously
-synthetic and never evidence of a live model run. Tests must never silently substitute
-SQLite for PostgreSQL. Report measured results only, draft evaluation labels pending
-human review. Finish code, tests, demo, teaching docs; report verification limits.
+Build a ₹0-required-cost, evidence-first research workbench. Current user amendment:
+SQLite local persistence, Groq primary provider, Gemini optional secondary. ADR 004
+supersedes conflicting original PostgreSQL requirements; preserve the source prompt.
+
+Required behavior: version/hash PDFs; CPU Docling with explicit pypdf baseline; actual
+BGE tokenizer-bound chunks and 384D CPU vectors; SQLite FTS5 BM25 + exact cosine RRF;
+source inspector; frozen corpus; persisted jobs/leases/checkpoints/cancellation; bounded
+RAG/single/five-role graph; structured validated outputs; skeptical review before
+experiment proposals; quota/unknown-call pause and explicit resume; Markdown reports.
+
+Separate literature-supported facts, author limitations, inference, unsupported claims,
+provisional candidates, objections, unknowns and falsifiable experiments. Never turn a
+corpus miss into a universal novelty claim. Model agreement is not scientific evidence.
+Fixture hashes/responses and original synthetic PDFs are clearly labeled and cannot
+enter real-provider research as semantic evidence. Human evaluation is not fabricated.
+
+Interface: responsive light neumorphic surfaces and inspectable orchestration derived
+from saved events. Static fixture walkthrough is explicit presentation state, never a
+new run. Public static showcase plus private local work is the supported release plan.
+One local worker, no GPU, Redis/Celery, autonomous execution, paid dependency or always-on
+free compute guarantee. Preserve all logs/tests/docs needed for candid ownership and
+interview explanations. Verify meaningful changes using real SQLite files and browser
+flows; live provider/model evidence is separate from deterministic controls.
