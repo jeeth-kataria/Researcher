@@ -1,0 +1,8 @@
+{
+  "annotation_status": "draft-generated-pending-human-review",
+  "corpus": "Three original synthetic PDFs; NOT published research",
+  "cases": [
+    {"id":"ordering","question":"How should memory retrieval ordering be evaluated under distractors?","relevant_snippets":["We studied memory retrieval","ordering comparison was left untested"],"known_false_candidate":"memory retrieval has never been studied"},
+    {"id":"conditions","question":"Can results from different memory task evaluation conditions be compared like-for-like?","relevant_snippets":["No like-for-like comparison","Long-context robustness"],"known_false_candidate":null}
+  ]
+}

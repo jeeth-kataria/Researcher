@@ -1,0 +1,71 @@
+[
+  {
+    "pdf": "paper-a.pdf",
+    "parser": "pypdf",
+    "status": "ran",
+    "items": 1,
+    "characters": 420,
+    "items_with_boxes": 0,
+    "warnings": [
+      "Baseline parser: layout/boxes unavailable"
+    ],
+    "quality_review": "pending manual inspection",
+    "elapsed_seconds": 0.07024724999791943,
+    "process_peak_rss_mib": 43.75,
+    "rss_note": "Cumulative process peak, including imports; not per-document incremental RAM"
+  },
+  {
+    "pdf": "paper-b.pdf",
+    "parser": "pypdf",
+    "status": "ran",
+    "items": 1,
+    "characters": 428,
+    "items_with_boxes": 0,
+    "warnings": [
+      "Baseline parser: layout/boxes unavailable"
+    ],
+    "quality_review": "pending manual inspection",
+    "elapsed_seconds": 0.0011125830060336739,
+    "process_peak_rss_mib": 43.765625,
+    "rss_note": "Cumulative process peak, including imports; not per-document incremental RAM"
+  },
+  {
+    "pdf": "paper-c.pdf",
+    "parser": "pypdf",
+    "status": "ran",
+    "items": 1,
+    "characters": 425,
+    "items_with_boxes": 0,
+    "warnings": [
+      "Baseline parser: layout/boxes unavailable"
+    ],
+    "quality_review": "pending manual inspection",
+    "elapsed_seconds": 0.0010138749930774793,
+    "process_peak_rss_mib": 43.765625,
+    "rss_note": "Cumulative process peak, including imports; not per-document incremental RAM"
+  },
+  {
+    "pdf": "paper-a.pdf",
+    "parser": "docling",
+    "status": "failed: LocalEntryNotFoundError",
+    "elapsed_seconds": 13.411241124995286,
+    "process_peak_rss_mib": 577.53125,
+    "rss_note": "Cumulative process peak, including imports; not per-document incremental RAM"
+  },
+  {
+    "pdf": "paper-b.pdf",
+    "parser": "docling",
+    "status": "failed: LocalEntryNotFoundError",
+    "elapsed_seconds": 0.004039499995997176,
+    "process_peak_rss_mib": 577.53125,
+    "rss_note": "Cumulative process peak, including imports; not per-document incremental RAM"
+  },
+  {
+    "pdf": "paper-c.pdf",
+    "parser": "docling",
+    "status": "failed: LocalEntryNotFoundError",
+    "elapsed_seconds": 0.0037761249986942858,
+    "process_peak_rss_mib": 577.53125,
+    "rss_note": "Cumulative process peak, including imports; not per-document incremental RAM"
+  }
+]

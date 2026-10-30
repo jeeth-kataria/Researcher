@@ -1,0 +1,271 @@
+{
+  "provenance": "SYNTHETIC FIXTURE FUNCTIONS ONLY",
+  "annotation_status": "draft-generated-pending-human-review",
+  "human_judgments_supplied": false,
+  "warning": "Draft relevance labels are not human ground truth. No multi-agent superiority conclusion.",
+  "budget": {
+    "max_calls": 10,
+    "max_tokens": 60000,
+    "retrieval_k": 8
+  },
+  "results": [
+    {
+      "case": "ordering",
+      "mode": "rag",
+      "model": "fixture-v1",
+      "manifest": [
+        "724ae7d3-ee96-567e-8919-2790530279ac",
+        "befc1a14-afa6-5f5c-ace3-b10e80a186e5",
+        "c28c2dc1-08e3-5033-82a3-2a240477547d"
+      ],
+      "latency_seconds": 0.0006109169917181134,
+      "latency_definition": "fixture functions only",
+      "metrics": {
+        "draft_retrieval_recall_at_k": {
+          "value": 1.0,
+          "numerator": 2,
+          "denominator": 2
+        },
+        "citation_correctness_structural_only": {
+          "value": 1.0,
+          "numerator": 1,
+          "denominator": 1
+        },
+        "human_factual_support": {
+          "value": null,
+          "numerator": 0,
+          "denominator": 0
+        },
+        "human_false_candidate_gap_rate": {
+          "value": null,
+          "numerator": 0,
+          "denominator": 0
+        },
+        "unjudged_claims": 1,
+        "candidate_count": 2,
+        "dispositions": {
+          "survived": 0,
+          "contradicted": 0,
+          "insufficient": 0
+        },
+        "calls": 1,
+        "tokens": 0
+      }
+    },
+    {
+      "case": "ordering",
+      "mode": "single",
+      "model": "fixture-v1",
+      "manifest": [
+        "724ae7d3-ee96-567e-8919-2790530279ac",
+        "befc1a14-afa6-5f5c-ace3-b10e80a186e5",
+        "c28c2dc1-08e3-5033-82a3-2a240477547d"
+      ],
+      "latency_seconds": 0.00014699999883305281,
+      "latency_definition": "fixture functions only",
+      "metrics": {
+        "draft_retrieval_recall_at_k": {
+          "value": 1.0,
+          "numerator": 2,
+          "denominator": 2
+        },
+        "citation_correctness_structural_only": {
+          "value": 1.0,
+          "numerator": 1,
+          "denominator": 1
+        },
+        "human_factual_support": {
+          "value": null,
+          "numerator": 0,
+          "denominator": 0
+        },
+        "human_false_candidate_gap_rate": {
+          "value": null,
+          "numerator": 0,
+          "denominator": 0
+        },
+        "unjudged_claims": 1,
+        "candidate_count": 2,
+        "dispositions": {
+          "survived": 1,
+          "contradicted": 1,
+          "insufficient": 0
+        },
+        "calls": 3,
+        "tokens": 0
+      }
+    },
+    {
+      "case": "ordering",
+      "mode": "multi",
+      "model": "fixture-v1",
+      "manifest": [
+        "724ae7d3-ee96-567e-8919-2790530279ac",
+        "befc1a14-afa6-5f5c-ace3-b10e80a186e5",
+        "c28c2dc1-08e3-5033-82a3-2a240477547d"
+      ],
+      "latency_seconds": 0.00016850000247359276,
+      "latency_definition": "fixture functions only",
+      "metrics": {
+        "draft_retrieval_recall_at_k": {
+          "value": 1.0,
+          "numerator": 2,
+          "denominator": 2
+        },
+        "citation_correctness_structural_only": {
+          "value": 1.0,
+          "numerator": 1,
+          "denominator": 1
+        },
+        "human_factual_support": {
+          "value": null,
+          "numerator": 0,
+          "denominator": 0
+        },
+        "human_false_candidate_gap_rate": {
+          "value": null,
+          "numerator": 0,
+          "denominator": 0
+        },
+        "unjudged_claims": 1,
+        "candidate_count": 2,
+        "dispositions": {
+          "survived": 1,
+          "contradicted": 1,
+          "insufficient": 0
+        },
+        "calls": 6,
+        "tokens": 0
+      }
+    },
+    {
+      "case": "conditions",
+      "mode": "rag",
+      "model": "fixture-v1",
+      "manifest": [
+        "724ae7d3-ee96-567e-8919-2790530279ac",
+        "befc1a14-afa6-5f5c-ace3-b10e80a186e5",
+        "c28c2dc1-08e3-5033-82a3-2a240477547d"
+      ],
+      "latency_seconds": 3.6375000490807e-05,
+      "latency_definition": "fixture functions only",
+      "metrics": {
+        "draft_retrieval_recall_at_k": {
+          "value": 1.0,
+          "numerator": 2,
+          "denominator": 2
+        },
+        "citation_correctness_structural_only": {
+          "value": 1.0,
+          "numerator": 1,
+          "denominator": 1
+        },
+        "human_factual_support": {
+          "value": null,
+          "numerator": 0,
+          "denominator": 0
+        },
+        "human_false_candidate_gap_rate": {
+          "value": null,
+          "numerator": 0,
+          "denominator": 0
+        },
+        "unjudged_claims": 1,
+        "candidate_count": 2,
+        "dispositions": {
+          "survived": 0,
+          "contradicted": 0,
+          "insufficient": 0
+        },
+        "calls": 1,
+        "tokens": 0
+      }
+    },
+    {
+      "case": "conditions",
+      "mode": "single",
+      "model": "fixture-v1",
+      "manifest": [
+        "724ae7d3-ee96-567e-8919-2790530279ac",
+        "befc1a14-afa6-5f5c-ace3-b10e80a186e5",
+        "c28c2dc1-08e3-5033-82a3-2a240477547d"
+      ],
+      "latency_seconds": 6.583299546036869e-05,
+      "latency_definition": "fixture functions only",
+      "metrics": {
+        "draft_retrieval_recall_at_k": {
+          "value": 1.0,
+          "numerator": 2,
+          "denominator": 2
+        },
+        "citation_correctness_structural_only": {
+          "value": 1.0,
+          "numerator": 1,
+          "denominator": 1
+        },
+        "human_factual_support": {
+          "value": null,
+          "numerator": 0,
+          "denominator": 0
+        },
+        "human_false_candidate_gap_rate": {
+          "value": null,
+          "numerator": 0,
+          "denominator": 0
+        },
+        "unjudged_claims": 1,
+        "candidate_count": 2,
+        "dispositions": {
+          "survived": 1,
+          "contradicted": 1,
+          "insufficient": 0
+        },
+        "calls": 3,
+        "tokens": 0
+      }
+    },
+    {
+      "case": "conditions",
+      "mode": "multi",
+      "model": "fixture-v1",
+      "manifest": [
+        "724ae7d3-ee96-567e-8919-2790530279ac",
+        "befc1a14-afa6-5f5c-ace3-b10e80a186e5",
+        "c28c2dc1-08e3-5033-82a3-2a240477547d"
+      ],
+      "latency_seconds": 7.858300523366779e-05,
+      "latency_definition": "fixture functions only",
+      "metrics": {
+        "draft_retrieval_recall_at_k": {
+          "value": 1.0,
+          "numerator": 2,
+          "denominator": 2
+        },
+        "citation_correctness_structural_only": {
+          "value": 1.0,
+          "numerator": 1,
+          "denominator": 1
+        },
+        "human_factual_support": {
+          "value": null,
+          "numerator": 0,
+          "denominator": 0
+        },
+        "human_false_candidate_gap_rate": {
+          "value": null,
+          "numerator": 0,
+          "denominator": 0
+        },
+        "unjudged_claims": 1,
+        "candidate_count": 2,
+        "dispositions": {
+          "survived": 1,
+          "contradicted": 1,
+          "insufficient": 0
+        },
+        "calls": 6,
+        "tokens": 0
+      }
+    }
+  ]
+}
